@@ -17,6 +17,8 @@ version = 1
 tomcat9.pkg-path = "tomcat9"
 jdk21.pkg-path = "jdk21"
 jdk21.priority = 1
+gnumake.pkg-path = "gnumake"
+gnused.pkg-path = "gnused"
 
 ## Environment Variables ---------------------------------------------
 ##  ... available for use in the activated environment
@@ -29,11 +31,6 @@ jdk21.priority = 1
 ## -------------------------------------------------------------------
 [hook]
 on-activate = '''
-  export CATALINA_BASE=$(mktemp -d -t tomcatXXX)
-  export CATALINA_OUT="$CATALINA_BASE/logs/catalina.out"
-  mkdir -p "$CATALINA_BASE"/{conf,logs,webapps,temp,work}
-  CATALINA_HOME=$(dirname "$(dirname "$(which catalina.sh)")")
-  cp -r "$CATALINA_HOME"/conf/* "$CATALINA_BASE/conf/"
 '''
 
 ## Profile script ----------------------------------------------------
@@ -42,27 +39,19 @@ on-activate = '''
 [profile]
 common = '''
 echo ""
-echo "  ┌─────────────────────────────────────────────────┐"
-echo "  │  Flox Tomcat Demo Environment                   │"
-echo "  │                                                 │"
-echo "  │  Run the demo:   ./demo.sh --auto               │"
-echo "  │  Interactive:    ./demo.sh                       │"
-echo "  │                                                 │"
-echo "  │  Manual usage:                                  │"
-echo "  │    catalina.sh start                            │"
-echo "  │    http://localhost:8080/sample/                 │"
-echo "  │    catalina.sh stop                             │"
-echo "  └─────────────────────────────────────────────────┘"
+echo "  ┌──────────────────────────────────────────────────────┐"
+echo "  │  Flox Tomcat Demo Environment                        │"
+echo "  │                                                      │"
+echo "  │  Build the app:  flox build                          │"
+echo "  │  Start Tomcat:   ./result-tomcat-demo/bin/tomcat-demo start  │"
+echo "  │  Stop Tomcat:    ./result-tomcat-demo/bin/tomcat-demo stop   │"
+echo "  │  Browse:         http://localhost:8080/sample/        │"
+echo "  │                                                      │"
+echo "  │  Run the demo:   ./demo.sh --auto                    │"
+echo "  │  Interactive:    ./demo.sh                            │"
+echo "  └──────────────────────────────────────────────────────┘"
 echo ""
 '''
-
-## Services ---------------------------------------------------------
-##  $ flox services start             <- Starts all services
-##  $ flox services status            <- Status of running services
-##  $ flox activate --start-services  <- Activates & starts all
-## ------------------------------------------------------------------
-[services]
-tomcat.command = "catalina.sh run"
 
 
 ## Include ----------------------------------------------------------
@@ -78,15 +67,11 @@ tomcat.command = "catalina.sh run"
 ##  $ flox build
 ##  $ flox publish
 ## ------------------------------------------------------------------
-[build]
-# [build.myproject]
-# description = "The coolest project ever"
-# version = "0.0.1"
-# command = """
-#   mkdir -p $out/bin
-#   cargo build --release
-#   cp target/release/myproject $out/bin/myproject
-# """
+[build.tomcat-demo]
+description = "Tomcat demo webapp with runtime launcher"
+version = "1.0.0"
+sandbox = "pure"
+command = "make install PREFIX=$out"
 
 
 ## Other Environment Options -----------------------------------------

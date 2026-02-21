@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Liberty Mutual Tomcat Demo — for Ben Zaer
-# Demonstrates: upgrade, rollback, cross-platform, and isolation with Flox
+# Demonstrates: build, upgrade, rollback, cross-platform, and isolation with Flox
 #
 # Usage: ./demo.sh [--auto] [--pause N] [--act N]
 #
@@ -23,6 +23,9 @@ AUTO=false
 PAUSE_DURATION=10   # seconds for browser-viewable pauses
 BRIEF_PAUSE=3       # seconds for output review pauses
 TARGET_ACT=""       # set by --act N
+
+# ── Wrapper path ──────────────────────────────────────────────────────────────
+WRAPPER="./result-tomcat-demo/bin/tomcat-demo"
 
 banner() {
   echo ""
@@ -82,13 +85,16 @@ wait_for_tomcat() {
 }
 
 stop_tomcat() {
-  if [ -n "${CATALINA_BASE:-}" ] && [ -f "$CATALINA_BASE/logs/catalina.pid" ]; then
-    catalina.sh stop 2>/dev/null || true
-    sleep 2
-  fi
+  $WRAPPER stop 2>/dev/null || true
   # Belt and suspenders
   pkill -f "org.apache.catalina" 2>/dev/null || true
   sleep 1
+}
+
+build_app() {
+  narrate "Building the app package with 'flox build'..."
+  run_cmd "flox build"
+  echo -e "${GREEN}  ✓ Package built: ./result-tomcat-demo/${RESET}"
 }
 
 DEMO_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -97,12 +103,6 @@ DEMO_DIR="$(cd "$(dirname "$0")" && pwd)"
 find_baseline() {
   cd "$DEMO_DIR"
   git log --oneline --reverse | head -1 | cut -d' ' -f1
-}
-
-deploy_webapp() {
-  # Deploy our custom JSP that shows live Tomcat/JDK versions
-  rm -rf "$CATALINA_BASE/webapps/sample" "$CATALINA_BASE/webapps/sample.war"
-  cp -r "$DEMO_DIR/webapp/sample" "$CATALINA_BASE/webapps/sample"
 }
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
@@ -152,17 +152,18 @@ act1_legacy() {
   run_cmd "flox list"
   pause
 
-  narrate "Activating the environment and deploying the sample webapp..."
+  narrate "Building the app package — bundles the webapp with a Tomcat launcher."
+  narrate "The app is built once as an immutable package. The runtime comes from the environment."
+  build_app
+  pause
 
-  # Source the flox profile to set up CATALINA_BASE
+  narrate "Activating the environment and starting the app..."
+
+  # Source the flox profile to get runtime deps
   eval "$(flox activate)"
 
-  narrate "Deploying the sample webapp (shows live Tomcat/JDK versions)..."
-  deploy_webapp
-  echo -e "${GREEN}  ✓ webapp deployed to $CATALINA_BASE/webapps/sample/${RESET}"
-
-  narrate "Starting Tomcat 9..."
-  catalina.sh start
+  narrate "Starting Tomcat 9 via the packaged launcher..."
+  run_cmd "$WRAPPER start"
   echo ""
 
   narrate "Waiting for Tomcat to come up..."
@@ -241,12 +242,9 @@ act2_upgrade() {
   narrate "Re-activating with the new packages..."
   eval "$(flox activate)"
 
-  narrate "Deploying the sample webapp to the new Tomcat..."
-  deploy_webapp
-  echo -e "${GREEN}  ✓ webapp deployed${RESET}"
-
-  narrate "Starting Tomcat 11..."
-  catalina.sh start
+  narrate "Starting Tomcat 11 — NO rebuild needed."
+  narrate "Same package, new runtime. The wrapper discovers Tomcat 11 from the environment."
+  run_cmd "$WRAPPER start"
 
   narrate "Waiting for Tomcat to come up..."
   if wait_for_tomcat; then
@@ -294,12 +292,8 @@ act3_rollback() {
   narrate "Re-activating the rolled-back environment..."
   eval "$(flox activate)"
 
-  narrate "Deploying the sample webapp..."
-  deploy_webapp
-  echo -e "${GREEN}  ✓ webapp deployed${RESET}"
-
-  narrate "Starting Tomcat (should be Tomcat 9 again)..."
-  catalina.sh start
+  narrate "Starting Tomcat — still no rebuild. Same package discovers Tomcat 9 again."
+  run_cmd "$WRAPPER start"
 
   narrate "Waiting for Tomcat to come up..."
   if wait_for_tomcat; then
@@ -380,6 +374,10 @@ act5_isolation() {
   run_cmd "readlink -f \$(which catalina.sh)"
   echo ""
 
+  narrate "Where is the app package itself?"
+  run_cmd "readlink -f ./result-tomcat-demo"
+  echo ""
+
   narrate "Notice: everything is in /nix/store/..."
   narrate "Nothing installed to /usr/local. No host packages. No mount point dependencies."
   echo ""
@@ -412,7 +410,8 @@ cleanup() {
   echo -e "${BOLD}${CYAN}  Demo complete!${RESET}"
   echo ""
   narrate "Recap — what we showed Ben:"
-  echo -e "  ${GREEN}✓${RESET} Tomcat 9 → 11 upgrade with a one-liner"
+  echo -e "  ${GREEN}✓${RESET} Built the app once as an immutable package (flox build)"
+  echo -e "  ${GREEN}✓${RESET} Tomcat 9 → 11 upgrade — no rebuild needed"
   echo -e "  ${GREEN}✓${RESET} Instant rollback via pointer swap"
   echo -e "  ${GREEN}✓${RESET} Full audit trail in git (lock file diffs)"
   echo -e "  ${GREEN}✓${RESET} Cross-platform consistency (4 architectures)"

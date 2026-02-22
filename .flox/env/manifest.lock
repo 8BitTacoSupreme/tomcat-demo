@@ -21,7 +21,7 @@
       "on-activate": ""
     },
     "profile": {
-      "common": "echo \"\"\necho \"  ┌──────────────────────────────────────────────────────┐\"\necho \"  │  Flox Tomcat Demo Environment                        │\"\necho \"  │                                                      │\"\necho \"  │  Build the app:  flox build                          │\"\necho \"  │  Start Tomcat:   ./result-tomcat-demo/bin/tomcat-demo start  │\"\necho \"  │  Stop Tomcat:    ./result-tomcat-demo/bin/tomcat-demo stop   │\"\necho \"  │  Browse:         http://localhost:8080/sample/        │\"\necho \"  │                                                      │\"\necho \"  │  Run the demo:   ./demo.sh --auto                    │\"\necho \"  │  Interactive:    ./demo.sh                            │\"\necho \"  └──────────────────────────────────────────────────────┘\"\necho \"\"\n"
+      "common": "echo \"\"\necho \"  ┌──────────────────────────────────────────────────────┐\"\necho \"  │  Flox Tomcat Demo Environment                        │\"\necho \"  │                                                      │\"\necho \"  │  tomcat-demo start / stop / status                   │\"\necho \"  │  tomcat-demo-run --auto                              │\"\necho \"  │                                                      │\"\necho \"  │  Browse:  http://localhost:8080/sample/               │\"\necho \"  └──────────────────────────────────────────────────────┘\"\necho \"\"\n"
     },
     "options": {},
     "build": {

@@ -3,7 +3,7 @@
 # Liberty Mutual Tomcat Demo — for Ben Zaer
 # Demonstrates: build, upgrade, rollback, cross-platform, and isolation with Flox
 #
-# Usage: ./demo.sh [--auto] [--pause N] [--act N]
+# Usage: tomcat-demo-run [--auto] [--pause N] [--act N]
 #
 
 set -euo pipefail
@@ -25,7 +25,18 @@ BRIEF_PAUSE=3       # seconds for output review pauses
 TARGET_ACT=""       # set by --act N
 
 # ── Wrapper path ──────────────────────────────────────────────────────────────
-WRAPPER="./result-tomcat-demo/bin/tomcat-demo"
+WRAPPER="tomcat-demo"
+
+# ── Manifest resolution ──────────────────────────────────────────────────────
+find_manifests_dir() {
+  local d="${FLOX_ENV:-}/share/manifests"
+  [ -d "$d" ] && echo "$d" && return
+  # Dev fallback: running from repo checkout
+  echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/manifests"
+}
+MANIFESTS_DIR="$(find_manifests_dir)"
+BASELINE_MANIFEST="$MANIFESTS_DIR/tomcat9-baseline.toml"
+UPGRADE_MANIFEST="$MANIFESTS_DIR/tomcat11-upgrade.toml"
 
 banner() {
   echo ""
@@ -92,48 +103,27 @@ stop_tomcat() {
 }
 
 build_app() {
-  narrate "Building the app package with 'flox build'..."
-  run_cmd "flox build"
-  echo -e "${GREEN}  ✓ Package built: ./result-tomcat-demo/${RESET}"
-}
-
-DEMO_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-# Find the initial tomcat9 commit — the baseline we reset to
-find_baseline() {
-  cd "$DEMO_DIR"
-  git log --oneline --reverse | head -1 | cut -d' ' -f1
+  if command -v tomcat-demo &>/dev/null; then
+    narrate "App package already on PATH — skipping build."
+    echo -e "${GREEN}  ✓ Package available: $(which tomcat-demo)${RESET}"
+  else
+    narrate "Building the app package with 'flox build'..."
+    run_cmd "flox build"
+    echo -e "${GREEN}  ✓ Package built: ./result-tomcat-demo/${RESET}"
+  fi
 }
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 setup() {
   banner "SETUP" "Initializing demo environment"
 
-  cd "$DEMO_DIR"
-
   if ! command -v flox &>/dev/null; then
     echo -e "${RED}  ✗ flox is not installed. Install from https://flox.dev${RESET}"
     exit 1
   fi
 
-  # Initialize git repo if not already one
-  if [ ! -d .git ]; then
-    narrate "Initializing git repo for version tracking..."
-    run_cmd "git init"
-    run_cmd "git add ."
-    run_cmd "git commit -m 'feat: initial tomcat9 + jdk21 environment (acquired company stack)'"
-  fi
-
-  # Always start from the tomcat9 + jdk21 baseline
-  local baseline
-  baseline="$(find_baseline)"
   narrate "Resetting to baseline (tomcat9 + jdk21)..."
-  git checkout "$baseline" -- .flox/env/ 2>/dev/null || true
-  # Commit the restoration so working tree is clean for Act 2's diff
-  if ! git diff --quiet .flox/env/ 2>/dev/null; then
-    git add .flox/env/
-    git commit -m 'chore: reset to tomcat9 baseline for demo' --quiet
-  fi
+  run_cmd "flox edit -f \"$BASELINE_MANIFEST\""
 
   echo -e "${GREEN}  ✓ Setup complete${RESET}"
 }
@@ -141,8 +131,6 @@ setup() {
 # ── Act 1: The Acquired Company ──────────────────────────────────────────────
 act1_legacy() {
   banner "ACT 1: THE ACQUIRED COMPANY" "Starting with legacy Tomcat 9 — the inherited stack"
-
-  cd "$DEMO_DIR"
 
   narrate "Ben's scenario: Liberty acquired a company running Tomcat 9 + JDK 21."
   narrate "This is what they inherited. Let's see what's in the environment."
@@ -195,31 +183,20 @@ act1_legacy() {
 act2_upgrade() {
   banner "ACT 2: DAY 60 — SECURITY SAYS UPGRADE" "Upgrading Tomcat 9 → 11 and JDK 21 → 25"
 
-  cd "$DEMO_DIR"
-
   narrate "The 60-day security window is closing."
   narrate "With Flox, the upgrade is a one-liner — not a week-long project."
   echo ""
 
-  narrate "Editing the manifest to swap packages — one atomic change."
-  narrate "We use 'flox edit -f' to apply a modified manifest non-interactively."
+  narrate "Before the upgrade — current bill of materials:"
+  run_cmd "flox list"
   echo ""
 
-  # Export current manifest, swap packages, apply with flox edit -f
-  flox list -c > /tmp/manifest-upgrade.toml
-  sed \
-    -e 's/tomcat9.pkg-path = "tomcat9"/tomcat11.pkg-path = "tomcat11"/' \
-    -e 's/jdk21.pkg-path = "jdk21"/jdk25.pkg-path = "jdk25"/' \
-    -e 's/jdk21.priority = 1/jdk25.priority = 1/' \
-    /tmp/manifest-upgrade.toml > /tmp/manifest-upgraded.toml
-
-  narrate "Here's what we're changing in the manifest:"
-  run_cmd "diff /tmp/manifest-upgrade.toml /tmp/manifest-upgraded.toml || true"
+  narrate "Here's the manifest diff — what we're changing:"
+  run_cmd "diff \"$BASELINE_MANIFEST\" \"$UPGRADE_MANIFEST\" || true"
   pause
 
   narrate "Applying the upgrade with 'flox edit -f'..."
-  run_cmd "flox edit -f /tmp/manifest-upgraded.toml"
-  rm -f /tmp/manifest-upgrade.toml /tmp/manifest-upgraded.toml
+  run_cmd "flox edit -f \"$UPGRADE_MANIFEST\""
 
   echo ""
   narrate "No compilation. No download. Both tomcat9 and tomcat11 are pre-built"
@@ -230,15 +207,10 @@ act2_upgrade() {
   run_cmd "flox list"
 
   echo ""
-  narrate "The lock file also updated — exact hashes for compliance auditors:"
-  run_cmd "git diff --stat .flox/env/manifest.lock"
+  narrate "In a real workflow, you'd commit the .flox/env/ directory to git here."
+  narrate "That gives you a full audit trail of every environment change."
   pause
 
-  narrate "Committing the upgrade for version history..."
-  run_cmd "git add ."
-  run_cmd "git commit -m 'feat: upgrade to tomcat11 + jdk25 (60-day security compliance)'"
-
-  echo ""
   narrate "Re-activating with the new packages..."
   eval "$(flox activate)"
 
@@ -262,7 +234,7 @@ act2_upgrade() {
 
   echo ""
   narrate "The 60-day upgrade treadmill just became a one-liner."
-  narrate "And you have a full audit trail in git."
+  narrate "And in a real workflow, you'd have a full audit trail in git."
   browser_pause
 
   narrate "Stopping Tomcat before rollback demo..."
@@ -273,8 +245,6 @@ act2_upgrade() {
 act3_rollback() {
   banner "ACT 3: IT BROKE IN PRODUCTION" "Instant rollback — pointer swap, not rebuild"
 
-  cd "$DEMO_DIR"
-
   narrate "Uh oh. QA found a compatibility issue with Tomcat 11."
   narrate "Production is down. The team is panicking."
   narrate "With traditional infra, rollback means: rebuild, redeploy, pray."
@@ -282,7 +252,7 @@ act3_rollback() {
   echo ""
 
   narrate "Rolling back to the previous environment (Tomcat 9 + JDK 21)..."
-  run_cmd "git checkout HEAD~1 -- .flox/env/"
+  run_cmd "flox edit -f \"$BASELINE_MANIFEST\""
   echo ""
 
   narrate "That's it. Let's verify what we have now:"
@@ -323,8 +293,6 @@ act3_rollback() {
 act4_platform() {
   banner "ACT 4: CROSS-PLATFORM CONSISTENCY" "Same env on dev MacBooks and prod EC2 Linux"
 
-  cd "$DEMO_DIR"
-
   narrate "Ben's team: devs on MacBooks, production on AWS EC2 Linux."
   narrate "\"Works on my machine\" is not acceptable for 5500 apps."
   echo ""
@@ -353,8 +321,6 @@ act4_platform() {
 act5_isolation() {
   banner "ACT 5: NO MORE HOST DEPENDENCIES" "Everything from the Nix store — zero host coupling"
 
-  cd "$DEMO_DIR"
-
   narrate "Ben's pain: K8s host dependencies, mount points, host packages."
   narrate "\"Move this container and everything breaks.\""
   narrate "With Flox, everything resolves to the Nix store."
@@ -375,7 +341,7 @@ act5_isolation() {
   echo ""
 
   narrate "Where is the app package itself?"
-  run_cmd "readlink -f ./result-tomcat-demo"
+  run_cmd "readlink -f \$(which tomcat-demo)"
   echo ""
 
   narrate "Notice: everything is in /nix/store/..."
@@ -401,10 +367,7 @@ cleanup() {
   echo -e "${GREEN}  ✓ Tomcat stopped${RESET}"
 
   # Restore to tomcat9 baseline for re-runnability
-  cd "$DEMO_DIR"
-  local baseline
-  baseline="$(find_baseline)"
-  git checkout "$baseline" -- .flox/env/ 2>/dev/null || true
+  flox edit -f "$BASELINE_MANIFEST" 2>/dev/null || true
 
   echo ""
   echo -e "${BOLD}${CYAN}  Demo complete!${RESET}"
@@ -413,7 +376,7 @@ cleanup() {
   echo -e "  ${GREEN}✓${RESET} Built the app once as an immutable package (flox build)"
   echo -e "  ${GREEN}✓${RESET} Tomcat 9 → 11 upgrade — no rebuild needed"
   echo -e "  ${GREEN}✓${RESET} Instant rollback via pointer swap"
-  echo -e "  ${GREEN}✓${RESET} Full audit trail in git (lock file diffs)"
+  echo -e "  ${GREEN}✓${RESET} Full audit trail (manifest diffs)"
   echo -e "  ${GREEN}✓${RESET} Cross-platform consistency (4 architectures)"
   echo -e "  ${GREEN}✓${RESET} Zero host dependencies (Nix store isolation)"
   echo -e "  ${GREEN}✓${RESET} Bill of materials for compliance (flox list)"

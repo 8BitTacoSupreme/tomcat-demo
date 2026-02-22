@@ -1,25 +1,35 @@
-BIN = tomcat-demo
+BIN         = tomcat-demo
+DEMO_BIN    = tomcat-demo-run
 WEBAPPS_SRC = webapp
-PREFIX = /usr/local
+MANIFESTS   = manifests
+PREFIX      = /usr/local
 
-.PHONY: all clean install-bin install-webapps install
+.PHONY: all clean install-bin install-demo install-webapps install-manifests install
 
 tomcat-demo: tomcat-demo.sh
 	cp $< $@
 	sed -i'' 's|@out@|$(PREFIX)|g' $@
 	chmod +x $@
 
-all: $(BIN)
+tomcat-demo-run: demo.sh
+	cp $< $@
+	chmod +x $@
+
+all: $(BIN) $(DEMO_BIN)
 
 clean:
-	rm -f $(BIN)
+	rm -f $(BIN) $(DEMO_BIN)
 
 install-bin: $(BIN)
-	mkdir -p $(PREFIX)/bin/
-	cp $^ $(PREFIX)/bin/
+	mkdir -p $(PREFIX)/bin/ && cp $^ $(PREFIX)/bin/
+
+install-demo: $(DEMO_BIN)
+	mkdir -p $(PREFIX)/bin/ && cp $^ $(PREFIX)/bin/
 
 install-webapps:
-	mkdir -p $(PREFIX)/webapps/
-	cp -r $(WEBAPPS_SRC)/* $(PREFIX)/webapps/
+	mkdir -p $(PREFIX)/webapps/ && cp -r $(WEBAPPS_SRC)/* $(PREFIX)/webapps/
 
-install: install-bin install-webapps
+install-manifests:
+	mkdir -p $(PREFIX)/share/manifests/ && cp $(MANIFESTS)/*.toml $(PREFIX)/share/manifests/
+
+install: install-bin install-demo install-webapps install-manifests

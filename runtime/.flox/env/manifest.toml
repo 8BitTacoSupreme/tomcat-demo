@@ -1,6 +1,5 @@
-## Flox Environment Manifest — Tomcat 9 + JDK 21 Baseline
-## Used by tomcat-demo-run for setup, rollback, and cleanup.
-## This is a complete manifest snapshot — `flox edit -f` replaces the entire file.
+## Flox Tomcat Demo — Runtime Environment
+## Pull and activate: flox pull 8BitTacoSupreme/tomcat-test && flox activate
 version = 1
 
 [install]
@@ -31,11 +30,5 @@ echo ""
 '''
 
 [include]
-
-[build.tomcat-demo]
-description = "Tomcat demo webapp with runtime launcher"
-version = "1.0.0"
-sandbox = "pure"
-command = "make install PREFIX=$out"
 
 [options]

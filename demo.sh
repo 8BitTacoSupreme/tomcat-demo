@@ -27,17 +27,6 @@ TARGET_ACT=""       # set by --act N
 # ── Wrapper path ──────────────────────────────────────────────────────────────
 WRAPPER="tomcat-demo"
 
-# ── Manifest resolution ──────────────────────────────────────────────────────
-find_manifests_dir() {
-  local d="${FLOX_ENV:-}/share/manifests"
-  [ -d "$d" ] && echo "$d" && return
-  # Dev fallback: running from repo checkout
-  echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/manifests"
-}
-MANIFESTS_DIR="$(find_manifests_dir)"
-BASELINE_MANIFEST="$MANIFESTS_DIR/tomcat9-baseline.toml"
-UPGRADE_MANIFEST="$MANIFESTS_DIR/tomcat11-upgrade.toml"
-
 banner() {
   echo ""
   echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
@@ -122,8 +111,13 @@ setup() {
     exit 1
   fi
 
-  narrate "Resetting to baseline (tomcat9 + jdk21)..."
-  run_cmd "flox edit -f \"$BASELINE_MANIFEST\""
+  # Ensure baseline packages are installed (idempotent)
+  narrate "Ensuring baseline environment (tomcat9 + jdk21)..."
+  flox install tomcat9 2>/dev/null || true
+  flox install jdk21 2>/dev/null || true
+  # Remove upgrade packages if left over from a previous run
+  flox uninstall tomcat11 2>/dev/null || true
+  flox uninstall jdk25 2>/dev/null || true
 
   echo -e "${GREEN}  ✓ Setup complete${RESET}"
 }
@@ -189,14 +183,11 @@ act2_upgrade() {
 
   narrate "Before the upgrade — current bill of materials:"
   run_cmd "flox list"
-  echo ""
-
-  narrate "Here's the manifest diff — what we're changing:"
-  run_cmd "diff \"$BASELINE_MANIFEST\" \"$UPGRADE_MANIFEST\" || true"
   pause
 
-  narrate "Applying the upgrade with 'flox edit -f'..."
-  run_cmd "flox edit -f \"$UPGRADE_MANIFEST\""
+  narrate "Swapping packages — remove old, install new:"
+  run_cmd "flox uninstall tomcat9 jdk21"
+  run_cmd "flox install tomcat11 jdk25"
 
   echo ""
   narrate "No compilation. No download. Both tomcat9 and tomcat11 are pre-built"
@@ -207,7 +198,7 @@ act2_upgrade() {
   run_cmd "flox list"
 
   echo ""
-  narrate "In a real workflow, you'd commit the .flox/env/ directory to git here."
+  narrate "In a real workflow, you'd commit the .flox/env/ directory to git."
   narrate "That gives you a full audit trail of every environment change."
   pause
 
@@ -234,7 +225,7 @@ act2_upgrade() {
 
   echo ""
   narrate "The 60-day upgrade treadmill just became a one-liner."
-  narrate "And in a real workflow, you'd have a full audit trail in git."
+  narrate "And you have a full audit trail in git."
   browser_pause
 
   narrate "Stopping Tomcat before rollback demo..."
@@ -251,8 +242,9 @@ act3_rollback() {
   narrate "With Flox? It's a pointer swap."
   echo ""
 
-  narrate "Rolling back to the previous environment (Tomcat 9 + JDK 21)..."
-  run_cmd "flox edit -f \"$BASELINE_MANIFEST\""
+  narrate "Rolling back — swap packages back to Tomcat 9 + JDK 21:"
+  run_cmd "flox uninstall tomcat11 jdk25"
+  run_cmd "flox install tomcat9 jdk21"
   echo ""
 
   narrate "That's it. Let's verify what we have now:"
@@ -367,7 +359,11 @@ cleanup() {
   echo -e "${GREEN}  ✓ Tomcat stopped${RESET}"
 
   # Restore to tomcat9 baseline for re-runnability
-  flox edit -f "$BASELINE_MANIFEST" 2>/dev/null || true
+  narrate "Restoring baseline packages..."
+  flox install tomcat9 2>/dev/null || true
+  flox install jdk21 2>/dev/null || true
+  flox uninstall tomcat11 2>/dev/null || true
+  flox uninstall jdk25 2>/dev/null || true
 
   echo ""
   echo -e "${BOLD}${CYAN}  Demo complete!${RESET}"
@@ -376,7 +372,6 @@ cleanup() {
   echo -e "  ${GREEN}✓${RESET} Built the app once as an immutable package (flox build)"
   echo -e "  ${GREEN}✓${RESET} Tomcat 9 → 11 upgrade — no rebuild needed"
   echo -e "  ${GREEN}✓${RESET} Instant rollback via pointer swap"
-  echo -e "  ${GREEN}✓${RESET} Full audit trail (manifest diffs)"
   echo -e "  ${GREEN}✓${RESET} Cross-platform consistency (4 architectures)"
   echo -e "  ${GREEN}✓${RESET} Zero host dependencies (Nix store isolation)"
   echo -e "  ${GREEN}✓${RESET} Bill of materials for compliance (flox list)"

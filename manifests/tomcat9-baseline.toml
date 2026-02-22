@@ -7,6 +7,8 @@ version = 1
 tomcat9.pkg-path = "tomcat9"
 jdk21.pkg-path = "jdk21"
 jdk21.priority = 1
+tomcat-demo.pkg-path = "8BitTacoSupreme/tomcat-demo"
+tomcat-demo.systems = ["aarch64-darwin"]
 
 [vars]
 

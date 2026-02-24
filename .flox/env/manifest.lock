@@ -9,12 +9,12 @@
       "gnused": {
         "pkg-path": "gnused"
       },
-      "jdk21": {
-        "pkg-path": "jdk21",
+      "jdk25": {
+        "pkg-path": "jdk25",
         "priority": 1
       },
-      "tomcat9": {
-        "pkg-path": "tomcat9"
+      "tomcat11": {
+        "pkg-path": "tomcat11"
       }
     },
     "hook": {
@@ -28,7 +28,7 @@
       "tomcat-demo": {
         "command": "make install PREFIX=$out",
         "sandbox": "pure",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "description": "Tomcat demo webapp with runtime launcher"
       }
     }
@@ -56,6 +56,12 @@
       "version": "4.4.1",
       "outputs_to_install": [
         "man",
+        "man",
+        "man",
+        "man",
+        "out",
+        "out",
+        "out",
         "out"
       ],
       "outputs": {
@@ -90,6 +96,8 @@
       "version": "4.4.1",
       "outputs_to_install": [
         "man",
+        "man",
+        "out",
         "out"
       ],
       "outputs": {
@@ -198,6 +206,7 @@
         "out",
         "out",
         "out",
+        "out",
         "out"
       ],
       "outputs": {
@@ -263,6 +272,7 @@
       "unfree": false,
       "version": "4.9",
       "outputs_to_install": [
+        "out",
         "out"
       ],
       "outputs": {
@@ -309,248 +319,249 @@
       "priority": 5
     },
     {
-      "attr_path": "jdk21",
+      "attr_path": "jdk25",
       "broken": false,
-      "derivation": "/nix/store/apmkmfhvv4ydqk43gb416757v7ymbbvj-zulu-ca-jdk-21.0.8.drv",
+      "derivation": "/nix/store/5zalkc22kkrfc1wgm9bw4ja0pkr9z2wb-zulu-ca-jdk-25.0.0.drv",
       "description": "Certified builds of OpenJDK",
-      "install_id": "jdk21",
+      "install_id": "jdk25",
       "license": "GPL-2.0-only",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "zulu-ca-jdk-21.0.8",
-      "pname": "jdk21",
+      "name": "zulu-ca-jdk-25.0.0",
+      "pname": "jdk25",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T04:40:08.042068Z",
+      "scrape_date": "2026-02-19T04:40:08.044872Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "21.0.8",
+      "version": "25.0.0",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/cnk79a166lrma21cdkh392b9q8irsh7r-zulu-ca-jdk-21.0.8"
+        "out": "/nix/store/w8vjnidarq2kghliij99mbl6zzc2zxra-zulu-ca-jdk-25.0.0"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
       "priority": 1
     },
     {
-      "attr_path": "jdk21",
+      "attr_path": "jdk25",
       "broken": false,
-      "derivation": "/nix/store/ry0d7nhqqprbw3hcikgi4hwabgk0bbni-openjdk-21.0.9+10.drv",
+      "derivation": "/nix/store/ac9rk5wmw2aj26insix3ps0q424whbcy-openjdk-25.0.2+10.drv",
       "description": "Open-source Java Development Kit",
-      "install_id": "jdk21",
+      "install_id": "jdk25",
       "license": "GPL-2.0-only",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "openjdk-21.0.9+10",
-      "pname": "jdk21",
+      "name": "openjdk-25.0.2+10",
+      "pname": "jdk25",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T05:13:14.749189Z",
+      "scrape_date": "2026-02-19T05:13:14.751801Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "21.0.9+10",
+      "version": "25.0.2+10",
       "outputs_to_install": [
-        "out",
         "out"
       ],
       "outputs": {
-        "debug": "/nix/store/96w6p1phqrxnq6sw4inisiks8fcbslwl-openjdk-21.0.9+10-debug",
-        "out": "/nix/store/f9y0mx3w94ng6sdq231rkd3v0i2ihb8x-openjdk-21.0.9+10"
+        "debug": "/nix/store/nyb29gjf0p1mvqywnp7p3d9n1k1x3wgc-openjdk-25.0.2+10-debug",
+        "out": "/nix/store/fxj06im8nxzkkmbvf01l4lns4188d13z-openjdk-25.0.2+10"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
       "priority": 1
     },
     {
-      "attr_path": "jdk21",
+      "attr_path": "jdk25",
       "broken": false,
-      "derivation": "/nix/store/cg853y7jw5v0dp7nwbv316wzjixarlrl-zulu-ca-jdk-21.0.8.drv",
+      "derivation": "/nix/store/w5avnlig3h72qadgy6mcvpc4nhkayzpg-zulu-ca-jdk-25.0.0.drv",
       "description": "Certified builds of OpenJDK",
-      "install_id": "jdk21",
+      "install_id": "jdk25",
       "license": "GPL-2.0-only",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "zulu-ca-jdk-21.0.8",
-      "pname": "jdk21",
+      "name": "zulu-ca-jdk-25.0.0",
+      "pname": "jdk25",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T05:45:53.443552Z",
+      "scrape_date": "2026-02-19T05:45:53.445954Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "21.0.8",
+      "version": "25.0.0",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/lc2gv2jh0pjy3xvrz4rcbssr1mas167y-zulu-ca-jdk-21.0.8"
+        "out": "/nix/store/4fjij570am5h2wav4865rgj1zd2p7m1d-zulu-ca-jdk-25.0.0"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 1
     },
     {
-      "attr_path": "jdk21",
+      "attr_path": "jdk25",
       "broken": false,
-      "derivation": "/nix/store/ii3a9afh8k1j8nikv12269mvrr1i4j9b-openjdk-21.0.9+10.drv",
+      "derivation": "/nix/store/bpj61dd4pqpf0qx1igiifjix3l4pvgc7-openjdk-25.0.2+10.drv",
       "description": "Open-source Java Development Kit",
-      "install_id": "jdk21",
+      "install_id": "jdk25",
       "license": "GPL-2.0-only",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "openjdk-21.0.9+10",
-      "pname": "jdk21",
+      "name": "openjdk-25.0.2+10",
+      "pname": "jdk25",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T06:23:44.879266Z",
+      "scrape_date": "2026-02-19T06:23:44.881938Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "21.0.9+10",
+      "version": "25.0.2+10",
       "outputs_to_install": [
-        "out",
         "out"
       ],
       "outputs": {
-        "debug": "/nix/store/n262v22apasz3ng8gfhvccp43diynkn6-openjdk-21.0.9+10-debug",
-        "out": "/nix/store/yb16bzvkdimkgczlw30pkhfxnzal26ks-openjdk-21.0.9+10"
+        "debug": "/nix/store/hdgwayvw7nd6slq6hdf8hfkpvbn62d3a-openjdk-25.0.2+10-debug",
+        "out": "/nix/store/vlk9ah96wjppmc82qnd3wjlca498ml81-openjdk-25.0.2+10"
       },
       "system": "x86_64-linux",
       "group": "toplevel",
       "priority": 1
     },
     {
-      "attr_path": "tomcat9",
+      "attr_path": "tomcat11",
       "broken": false,
-      "derivation": "/nix/store/ckp2hddscbn2rx2b6q447p86k4rwsgmi-apache-tomcat-9.0.115.drv",
+      "derivation": "/nix/store/69cgp3bplnhs5kwp2wki1ksrfk2z7vv5-apache-tomcat-11.0.18.drv",
       "description": "Implementation of the Java Servlet and JavaServer Pages technologies",
-      "install_id": "tomcat9",
+      "install_id": "tomcat11",
       "license": "Apache-2.0",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "apache-tomcat-9.0.115",
-      "pname": "tomcat9",
+      "name": "apache-tomcat-11.0.18",
+      "pname": "tomcat11",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T04:42:05.838298Z",
+      "scrape_date": "2026-02-19T04:42:05.834647Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "9.0.115",
+      "version": "11.0.18",
       "outputs_to_install": [
+        "out",
+        "out",
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/0zy8g1mhmdz2xs6df52zqkcidkmfj2r7-apache-tomcat-9.0.115",
-        "webapps": "/nix/store/dsshmxrzwdacc91zq5vn5ywzvvpmhjid-apache-tomcat-9.0.115-webapps"
+        "out": "/nix/store/iqncz8xzs933pa5n4pcc0nzy9c0y0gjs-apache-tomcat-11.0.18",
+        "webapps": "/nix/store/3505fkjx91yzyipifdcf2wlzqs5v6ajq-apache-tomcat-11.0.18-webapps"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
       "priority": 5
     },
     {
-      "attr_path": "tomcat9",
+      "attr_path": "tomcat11",
       "broken": false,
-      "derivation": "/nix/store/f3xsp4bvq91nrnnyvh6xw99fbf8hpg1y-apache-tomcat-9.0.115.drv",
+      "derivation": "/nix/store/6zwqnp2lwgpxcvmrzsxh44ckh0hgfvgr-apache-tomcat-11.0.18.drv",
       "description": "Implementation of the Java Servlet and JavaServer Pages technologies",
-      "install_id": "tomcat9",
+      "install_id": "tomcat11",
       "license": "Apache-2.0",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "apache-tomcat-9.0.115",
-      "pname": "tomcat9",
+      "name": "apache-tomcat-11.0.18",
+      "pname": "tomcat11",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T05:15:53.787727Z",
+      "scrape_date": "2026-02-19T05:15:53.783897Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "9.0.115",
+      "version": "11.0.18",
       "outputs_to_install": [
+        "out",
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/jkky9s4af2870j18b2kbdfcipgh0n8xb-apache-tomcat-9.0.115",
-        "webapps": "/nix/store/d0k92g3wrl0786y2q1pyrwpijvm4ll2n-apache-tomcat-9.0.115-webapps"
+        "out": "/nix/store/jk2fh3xbdacpqzcwhmp12b2q188zh19g-apache-tomcat-11.0.18",
+        "webapps": "/nix/store/cyf2m890vvjvxg44c9pm7dl6rc2r84q5-apache-tomcat-11.0.18-webapps"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
       "priority": 5
     },
     {
-      "attr_path": "tomcat9",
+      "attr_path": "tomcat11",
       "broken": false,
-      "derivation": "/nix/store/h0wmjba36pys1mscadgm4i55rnvvy4y6-apache-tomcat-9.0.115.drv",
+      "derivation": "/nix/store/cixy42qmvwcpnnq48ba0mx6bv4503932-apache-tomcat-11.0.18.drv",
       "description": "Implementation of the Java Servlet and JavaServer Pages technologies",
-      "install_id": "tomcat9",
+      "install_id": "tomcat11",
       "license": "Apache-2.0",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "apache-tomcat-9.0.115",
-      "pname": "tomcat9",
+      "name": "apache-tomcat-11.0.18",
+      "pname": "tomcat11",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T05:47:51.115114Z",
+      "scrape_date": "2026-02-19T05:47:51.111729Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "9.0.115",
+      "version": "11.0.18",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/yjbqnpzn69nyyqvr7x6p0qns72d72m5a-apache-tomcat-9.0.115",
-        "webapps": "/nix/store/v788ay1lgmihxpahyhfldbyw4plmd5fk-apache-tomcat-9.0.115-webapps"
+        "out": "/nix/store/n3b6bjnpf4spi3zgy8vhdjl6dh63ba38-apache-tomcat-11.0.18",
+        "webapps": "/nix/store/vi34ag01qznq7n2byiva0s47pcibywc5-apache-tomcat-11.0.18-webapps"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 5
     },
     {
-      "attr_path": "tomcat9",
+      "attr_path": "tomcat11",
       "broken": false,
-      "derivation": "/nix/store/gw041ix5gpybc7dg8dnpxiasadw2sd4d-apache-tomcat-9.0.115.drv",
+      "derivation": "/nix/store/cqa44s1n4s9gysz21cy3n0agqzvy62ba-apache-tomcat-11.0.18.drv",
       "description": "Implementation of the Java Servlet and JavaServer Pages technologies",
-      "install_id": "tomcat9",
+      "install_id": "tomcat11",
       "license": "Apache-2.0",
       "locked_url": "https://github.com/flox/nixpkgs?rev=0182a361324364ae3f436a63005877674cf45efb",
-      "name": "apache-tomcat-9.0.115",
-      "pname": "tomcat9",
+      "name": "apache-tomcat-11.0.18",
+      "pname": "tomcat11",
       "rev": "0182a361324364ae3f436a63005877674cf45efb",
       "rev_count": 948083,
       "rev_date": "2026-02-17T23:04:30Z",
-      "scrape_date": "2026-02-19T06:26:36.982262Z",
+      "scrape_date": "2026-02-19T06:26:36.978105Z",
       "stabilities": [
         "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "9.0.115",
+      "version": "11.0.18",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/y73bdr0wlmw414m00dq2j48vf2c0ghza-apache-tomcat-9.0.115",
-        "webapps": "/nix/store/ycc2hharw6nf0f1hvfzcgqizhygv4j04-apache-tomcat-9.0.115-webapps"
+        "out": "/nix/store/zymssvhl46jgyncfvgkxsrq0xljabng0-apache-tomcat-11.0.18",
+        "webapps": "/nix/store/gqf997dhz6jgg6azn8wc66px3ps5qvvv-apache-tomcat-11.0.18-webapps"
       },
       "system": "x86_64-linux",
       "group": "toplevel",

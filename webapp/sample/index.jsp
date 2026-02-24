@@ -91,7 +91,7 @@
     </div>
     <div class="row">
       <span class="label">Source</span>
-      <span class="value">/nix/store/...</span>
+      <span class="value"><%= System.getenv("FLOX_MANIFEST_BUILD_OUT") != null ? System.getenv("FLOX_MANIFEST_BUILD_OUT") : "/nix/store/..." %></span>
     </div>
     <div class="footer">
       Served from a Flox-managed environment &mdash; zero host dependencies

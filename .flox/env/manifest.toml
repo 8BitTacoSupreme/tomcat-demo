@@ -40,12 +40,12 @@ on-activate = '''
 common = '''
 echo ""
 echo "  ┌──────────────────────────────────────────────────────┐"
-echo "  │  Flox Tomcat Demo Environment                        │"
+echo "  │  Flox Tomcat BUILD Environment                       │"
 echo "  │                                                      │"
-echo "  │  tomcat-demo start / stop / status                   │"
-echo "  │  tomcat-demo-run --auto                              │"
+echo "  │  flox build        — build tomcat-demo package       │"
+echo "  │  flox publish      — publish to FloxHub catalog      │"
 echo "  │                                                      │"
-echo "  │  Browse:  http://localhost:8080/sample/               │"
+echo "  │  To run the demo:  cd runtime && flox activate       │"
 echo "  └──────────────────────────────────────────────────────┘"
 echo ""
 '''

@@ -21,7 +21,7 @@
       "on-activate": ""
     },
     "profile": {
-      "common": "echo \"\"\necho \"  ┌──────────────────────────────────────────────────────┐\"\necho \"  │  Flox Tomcat Demo Environment                        │\"\necho \"  │                                                      │\"\necho \"  │  tomcat-demo start / stop / status                   │\"\necho \"  │  tomcat-demo-run --auto                              │\"\necho \"  │                                                      │\"\necho \"  │  Browse:  http://localhost:8080/sample/               │\"\necho \"  └──────────────────────────────────────────────────────┘\"\necho \"\"\n"
+      "common": "echo \"\"\necho \"  ┌──────────────────────────────────────────────────────┐\"\necho \"  │  Flox Tomcat BUILD Environment                       │\"\necho \"  │                                                      │\"\necho \"  │  flox build        — build tomcat-demo package       │\"\necho \"  │  flox publish      — publish to FloxHub catalog      │\"\necho \"  │                                                      │\"\necho \"  │  To run the demo:  cd runtime && flox activate       │\"\necho \"  └──────────────────────────────────────────────────────┘\"\necho \"\"\n"
     },
     "options": {},
     "build": {

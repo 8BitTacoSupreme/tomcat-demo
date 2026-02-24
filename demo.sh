@@ -1,12 +1,27 @@
 #!/usr/bin/env bash
 #
 # Liberty Mutual Tomcat Demo — for Ben Zaer
-# Demonstrates: build, upgrade, rollback, cross-platform, and isolation with Flox
+# Demonstrates: upgrade, rollback, cross-platform, and isolation with Flox
 #
-# Usage: tomcat-demo-run [--auto] [--pause N] [--act N]
+# Prerequisites: flox installed (https://flox.dev)
+# No git clone required — all packages come from the Flox catalog.
+#
+# Usage: bash demo.sh [--auto] [--pause N] [--act N]
 #
 
 set -euo pipefail
+
+# ── V2 manifest workaround ─────────────────────────────────────────────────
+export FLOX_FEATURES_OUTPUTS=1
+
+# ── Runtime environment ─────────────────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUNTIME_DIR="${SCRIPT_DIR}/runtime"
+FLOX_ARGS=(-d "$RUNTIME_DIR")
+MANIFEST="${RUNTIME_DIR}/.flox/env/manifest.toml"
+
+# ── Tomcat state ────────────────────────────────────────────────────────────
+CATALINA_BASE_FILE="/tmp/flox-tomcat-demo.base"
 
 # ── Colors & helpers ──────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -18,14 +33,10 @@ BOLD='\033[1m'
 DIM='\033[2m'
 RESET='\033[0m'
 
-# ── Mode flags ────────────────────────────────────────────────────────────────
 AUTO=false
-PAUSE_DURATION=10   # seconds for browser-viewable pauses
-BRIEF_PAUSE=3       # seconds for output review pauses
-TARGET_ACT=""       # set by --act N
-
-# ── Wrapper path ──────────────────────────────────────────────────────────────
-WRAPPER="tomcat-demo"
+PAUSE_DURATION=10
+BRIEF_PAUSE=3
+TARGET_ACT=""
 
 banner() {
   echo ""
@@ -36,9 +47,7 @@ banner() {
   echo ""
 }
 
-narrate() {
-  echo -e "${YELLOW}  ▸ $1${RESET}"
-}
+narrate() { echo -e "${YELLOW}  ▸ $1${RESET}"; }
 
 run_cmd() {
   echo -e "${DIM}  \$ $1${RESET}"
@@ -71,8 +80,7 @@ browser_pause() {
 }
 
 wait_for_tomcat() {
-  local max_attempts=30
-  local attempt=0
+  local max_attempts=30 attempt=0
   while [ $attempt -lt $max_attempts ]; do
     if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/sample/ 2>/dev/null | grep -q "200"; then
       return 0
@@ -84,22 +92,66 @@ wait_for_tomcat() {
   return 1
 }
 
+# ── Package swap ────────────────────────────────────────────────────────────
+# Swaps tomcat and jdk versions by editing the manifest directly.
+# Uses stable install IDs (tomcat, jdk) so priority settings are preserved.
+swap_packages() {
+  local tomcat_pkg="$1" jdk_pkg="$2"
+  sed -i '' "s/^tomcat\.pkg-path = .*/tomcat.pkg-path = \"${tomcat_pkg}\"/" "$MANIFEST"
+  sed -i '' "s/^jdk\.pkg-path = .*/jdk.pkg-path = \"${jdk_pkg}\"/" "$MANIFEST"
+}
+
+# ── Tomcat lifecycle ────────────────────────────────────────────────────────
+start_tomcat() {
+  flox activate "${FLOX_ARGS[@]}" -- bash -c '
+    set -e
+    real_catalina=$(readlink -f $(which catalina.sh))
+    export CATALINA_HOME=$(dirname $(dirname "$real_catalina"))
+    real_java=$(readlink -f $(which java))
+    export JAVA_HOME=$(dirname $(dirname "$real_java"))
+
+    BASE=$(mktemp -d /tmp/flox-tomcat-demo.XXXXXX)
+    mkdir -p "$BASE"/{conf,logs,temp,work,webapps}
+    cp -r "$CATALINA_HOME"/conf/* "$BASE/conf/"
+    chmod -R u+w "$BASE/conf/"
+    cp "$FLOX_ENV/webapps/sample.war" "$BASE/webapps/"
+
+    export CATALINA_BASE="$BASE"
+    echo "$BASE" > '"$CATALINA_BASE_FILE"'
+    catalina.sh start
+  '
+}
+
 stop_tomcat() {
-  $WRAPPER stop 2>/dev/null || true
-  # Belt and suspenders
+  if [ -f "$CATALINA_BASE_FILE" ]; then
+    local base
+    base="$(cat "$CATALINA_BASE_FILE")"
+    if [ -d "$base" ]; then
+      flox activate "${FLOX_ARGS[@]}" -- bash -c '
+        set -e
+        real_catalina=$(readlink -f $(which catalina.sh))
+        export CATALINA_HOME=$(dirname $(dirname "$real_catalina"))
+        real_java=$(readlink -f $(which java))
+        export JAVA_HOME=$(dirname $(dirname "$real_java"))
+        export CATALINA_BASE="'"$base"'"
+        catalina.sh stop 2>/dev/null || true
+      '
+      sleep 2
+      rm -rf "$base"
+    fi
+    rm -f "$CATALINA_BASE_FILE"
+  fi
   pkill -f "org.apache.catalina" 2>/dev/null || true
   sleep 1
 }
 
-build_app() {
-  if command -v tomcat-demo &>/dev/null; then
-    narrate "App package already on PATH — skipping build."
-    echo -e "${GREEN}  ✓ Package available: $(which tomcat-demo)${RESET}"
-  else
-    narrate "Building the app package with 'flox build'..."
-    run_cmd "flox build"
-    echo -e "${GREEN}  ✓ Package built: ./result-tomcat-demo/${RESET}"
-  fi
+show_versions() {
+  flox activate "${FLOX_ARGS[@]}" -- bash -c '
+    real_catalina=$(readlink -f $(which catalina.sh))
+    export CATALINA_HOME=$(dirname $(dirname "$real_catalina"))
+    catalina.sh version 2>/dev/null | grep "Server number"
+    java -version 2>&1 | head -1
+  '
 }
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
@@ -111,13 +163,16 @@ setup() {
     exit 1
   fi
 
-  # Ensure baseline packages are installed (idempotent)
-  narrate "Ensuring baseline environment (tomcat9 + jdk21)..."
-  flox install tomcat9 2>/dev/null || true
-  flox install jdk21 2>/dev/null || true
-  # Remove upgrade packages if left over from a previous run
-  flox uninstall tomcat11 2>/dev/null || true
-  flox uninstall jdk25 2>/dev/null || true
+  if [ ! -d "$RUNTIME_DIR/.flox" ]; then
+    echo -e "${RED}  ✗ Runtime environment not found at $RUNTIME_DIR${RESET}"
+    exit 1
+  fi
+
+  # Ensure baseline: tomcat9 + jdk21
+  narrate "Ensuring baseline environment (tomcat9 + jdk21 + sample-tomcat-app)..."
+  swap_packages "tomcat9" "jdk21"
+  # Verify it resolves
+  flox list "${FLOX_ARGS[@]}" >/dev/null 2>&1
 
   echo -e "${GREEN}  ✓ Setup complete${RESET}"
 }
@@ -131,22 +186,15 @@ act1_legacy() {
   echo ""
 
   narrate "Bill of materials — every package, every version, auditable:"
-  run_cmd "flox list"
+  run_cmd "flox list ${FLOX_ARGS[*]}"
   pause
 
-  narrate "Building the app package — bundles the webapp with a Tomcat launcher."
-  narrate "The app is built once as an immutable package. The runtime comes from the environment."
-  build_app
+  narrate "The sample webapp was published to the Flox catalog."
+  narrate "No git clone, no build step — just 'flox install brantley/sample-tomcat-app'."
   pause
 
-  narrate "Activating the environment and starting the app..."
-
-  # Source the flox profile to get runtime deps
-  eval "$(flox activate)"
-
-  narrate "Starting Tomcat 9 via the packaged launcher..."
-  run_cmd "$WRAPPER start"
-  echo ""
+  narrate "Starting Tomcat 9..."
+  start_tomcat
 
   narrate "Waiting for Tomcat to come up..."
   if wait_for_tomcat; then
@@ -159,10 +207,8 @@ act1_legacy() {
   fi
 
   echo ""
-  narrate "Tomcat version:"
-  run_cmd "catalina.sh version 2>/dev/null | grep 'Server number'"
-  narrate "Java version:"
-  run_cmd "java -version 2>&1 | head -1"
+  narrate "Versions:"
+  show_versions
 
   echo ""
   narrate "This is the acquired company's stack. It works. But security says:"
@@ -182,32 +228,23 @@ act2_upgrade() {
   echo ""
 
   narrate "Before the upgrade — current bill of materials:"
-  run_cmd "flox list"
+  run_cmd "flox list ${FLOX_ARGS[*]}"
   pause
 
-  narrate "Swapping packages — remove old, install new:"
-  run_cmd "flox uninstall tomcat9 jdk21"
-  run_cmd "flox install tomcat11 jdk25"
+  narrate "Swapping Tomcat 9 → 11 and JDK 21 → 25 in the manifest:"
+  swap_packages "tomcat11" "jdk25"
+  echo -e "${GREEN}  ✓ Manifest updated${RESET}"
 
   echo ""
   narrate "No compilation. No download. Both tomcat9 and tomcat11 are pre-built"
-  narrate "in the Nixpkgs binary cache. Flox resolved and cached them already."
-  narrate "Switching versions is a pointer swap, not a compile."
+  narrate "in the Nixpkgs binary cache. Switching versions is a pointer swap."
   echo ""
   narrate "Updated bill of materials:"
-  run_cmd "flox list"
-
-  echo ""
-  narrate "In a real workflow, you'd commit the .flox/env/ directory to git."
-  narrate "That gives you a full audit trail of every environment change."
+  run_cmd "flox list ${FLOX_ARGS[*]}"
   pause
 
-  narrate "Re-activating with the new packages..."
-  eval "$(flox activate)"
-
-  narrate "Starting Tomcat 11 — NO rebuild needed."
-  narrate "Same package, new runtime. The wrapper discovers Tomcat 11 from the environment."
-  run_cmd "$WRAPPER start"
+  narrate "Starting Tomcat 11 — NO rebuild needed. Same webapp, new runtime."
+  start_tomcat
 
   narrate "Waiting for Tomcat to come up..."
   if wait_for_tomcat; then
@@ -218,14 +255,11 @@ act2_upgrade() {
   fi
 
   echo ""
-  narrate "Tomcat version:"
-  run_cmd "catalina.sh version 2>/dev/null | grep 'Server number'"
-  narrate "Java version:"
-  run_cmd "java -version 2>&1 | head -1"
+  narrate "Versions:"
+  show_versions
 
   echo ""
   narrate "The 60-day upgrade treadmill just became a one-liner."
-  narrate "And you have a full audit trail in git."
   browser_pause
 
   narrate "Stopping Tomcat before rollback demo..."
@@ -243,19 +277,16 @@ act3_rollback() {
   echo ""
 
   narrate "Rolling back — swap packages back to Tomcat 9 + JDK 21:"
-  run_cmd "flox uninstall tomcat11 jdk25"
-  run_cmd "flox install tomcat9 jdk21"
+  swap_packages "tomcat9" "jdk21"
+  echo -e "${GREEN}  ✓ Manifest restored to Tomcat 9 + JDK 21${RESET}"
   echo ""
 
-  narrate "That's it. Let's verify what we have now:"
-  run_cmd "flox list"
+  narrate "Let's verify:"
+  run_cmd "flox list ${FLOX_ARGS[*]}"
   pause
 
-  narrate "Re-activating the rolled-back environment..."
-  eval "$(flox activate)"
-
-  narrate "Starting Tomcat — still no rebuild. Same package discovers Tomcat 9 again."
-  run_cmd "$WRAPPER start"
+  narrate "Starting Tomcat — same webapp discovers Tomcat 9 again."
+  start_tomcat
 
   narrate "Waiting for Tomcat to come up..."
   if wait_for_tomcat; then
@@ -266,13 +297,10 @@ act3_rollback() {
   fi
 
   echo ""
-  narrate "Tomcat version:"
-  run_cmd "catalina.sh version 2>/dev/null | grep 'Server number'"
-  narrate "Java version:"
-  run_cmd "java -version 2>&1 | head -1"
+  narrate "Versions:"
+  show_versions
 
   echo ""
-  narrate "This is the pointer swap. Both versions exist in the Nix store."
   narrate "Rollback is a metadata change, not a rebuild."
   narrate "No redownload. No recompilation. Seconds, not hours."
   browser_pause
@@ -292,11 +320,10 @@ act4_platform() {
   narrate "The lock file pins exact versions for ALL platforms:"
   echo ""
   narrate "Platforms covered in the lock file:"
-  run_cmd "grep '\"system\"' .flox/env/manifest.lock | sort -u"
+  run_cmd "grep '\"system\"' ${RUNTIME_DIR}/.flox/env/manifest.lock | sort -u"
   echo ""
 
-  narrate "Your devs on MacBooks (aarch64-darwin, x86_64-darwin)"
-  narrate "and your EC2 instances on Linux (aarch64-linux, x86_64-linux)"
+  narrate "Your devs on MacBooks and your EC2 instances on Linux"
   narrate "get the exact same Tomcat, same JDK, same configs."
   echo ""
 
@@ -318,24 +345,20 @@ act5_isolation() {
   narrate "With Flox, everything resolves to the Nix store."
   echo ""
 
-  eval "$(flox activate)"
+  flox activate "${FLOX_ARGS[@]}" -- bash -c '
+    echo -e "  \033[1;33m▸ Where is Java?\033[0m"
+    echo -e "  \033[2m  $(which java)\033[0m"
+    echo -e "  \033[2m  → $(readlink -f $(which java))\033[0m"
+    echo ""
+    echo -e "  \033[1;33m▸ Where is Tomcat?\033[0m"
+    echo -e "  \033[2m  $(which catalina.sh)\033[0m"
+    echo -e "  \033[2m  → $(readlink -f $(which catalina.sh))\033[0m"
+    echo ""
+    echo -e "  \033[1;33m▸ Where is the sample webapp?\033[0m"
+    echo -e "  \033[2m  $FLOX_ENV/webapps/sample.war\033[0m"
+  '
 
-  narrate "Where is Java?"
-  run_cmd "which java"
-  narrate "Actual Nix store path:"
-  run_cmd "readlink -f \$(which java)"
   echo ""
-
-  narrate "Where is Tomcat?"
-  run_cmd "which catalina.sh"
-  narrate "Actual Nix store path:"
-  run_cmd "readlink -f \$(which catalina.sh)"
-  echo ""
-
-  narrate "Where is the app package itself?"
-  run_cmd "readlink -f \$(which tomcat-demo)"
-  echo ""
-
   narrate "Notice: everything is in /nix/store/..."
   narrate "Nothing installed to /usr/local. No host packages. No mount point dependencies."
   echo ""
@@ -353,26 +376,23 @@ act5_isolation() {
 
 # ── Cleanup ───────────────────────────────────────────────────────────────────
 cleanup() {
-  banner "CLEANUP" "Stopping services and cleaning up"
+  banner "CLEANUP" "Stopping services and restoring baseline"
 
   stop_tomcat
   echo -e "${GREEN}  ✓ Tomcat stopped${RESET}"
 
-  # Restore to tomcat9 baseline for re-runnability
-  narrate "Restoring baseline packages..."
-  flox install tomcat9 2>/dev/null || true
-  flox install jdk21 2>/dev/null || true
-  flox uninstall tomcat11 2>/dev/null || true
-  flox uninstall jdk25 2>/dev/null || true
+  narrate "Restoring baseline (tomcat9 + jdk21)..."
+  swap_packages "tomcat9" "jdk21"
+  echo -e "${GREEN}  ✓ Baseline restored${RESET}"
 
   echo ""
   echo -e "${BOLD}${CYAN}  Demo complete!${RESET}"
   echo ""
   narrate "Recap — what we showed Ben:"
-  echo -e "  ${GREEN}✓${RESET} Built the app once as an immutable package (flox build)"
-  echo -e "  ${GREEN}✓${RESET} Tomcat 9 → 11 upgrade — no rebuild needed"
-  echo -e "  ${GREEN}✓${RESET} Instant rollback via pointer swap"
-  echo -e "  ${GREEN}✓${RESET} Cross-platform consistency (4 architectures)"
+  echo -e "  ${GREEN}✓${RESET} Webapp from Flox catalog — no git clone, no build needed"
+  echo -e "  ${GREEN}✓${RESET} Tomcat 9 → 11 upgrade — pointer swap, not rebuild"
+  echo -e "  ${GREEN}✓${RESET} Instant rollback — seconds, not hours"
+  echo -e "  ${GREEN}✓${RESET} Cross-platform consistency (lock file pins all architectures)"
   echo -e "  ${GREEN}✓${RESET} Zero host dependencies (Nix store isolation)"
   echo -e "  ${GREEN}✓${RESET} Bill of materials for compliance (flox list)"
   echo ""
@@ -382,42 +402,22 @@ cleanup() {
 parse_args() {
   while [ $# -gt 0 ]; do
     case "$1" in
-      --auto)
-        AUTO=true
-        shift
-        ;;
+      --auto)  AUTO=true; shift ;;
       --pause)
-        if [ -z "${2:-}" ]; then
-          echo "Error: --pause requires a number (seconds)" >&2
-          exit 1
-        fi
-        PAUSE_DURATION="$2"
-        BRIEF_PAUSE="$2"
-        shift 2
-        ;;
+        [ -n "${2:-}" ] || { echo "Error: --pause requires a number" >&2; exit 1; }
+        PAUSE_DURATION="$2"; BRIEF_PAUSE="$2"; shift 2 ;;
       --act)
-        if [ -z "${2:-}" ]; then
-          echo "Error: --act requires a number (1-5 or 'cleanup')" >&2
-          exit 1
-        fi
-        TARGET_ACT="$2"
-        shift 2
-        ;;
+        [ -n "${2:-}" ] || { echo "Error: --act requires 1-5 or 'cleanup'" >&2; exit 1; }
+        TARGET_ACT="$2"; shift 2 ;;
       -h|--help)
         echo "Usage: $0 [--auto] [--pause N] [--act N]"
         echo ""
         echo "Options:"
-        echo "  --auto      Run unattended with timed pauses (no Enter key needed)"
-        echo "  --pause N   Set pause duration in seconds (default: 10 for browser, 3 for output)"
+        echo "  --auto      Run unattended with timed pauses"
+        echo "  --pause N   Set pause duration in seconds (default: 10)"
         echo "  --act N     Jump to a specific act (1-5 or 'cleanup')"
-        echo "  -h, --help  Show this help message"
-        exit 0
-        ;;
-      *)
-        echo "Unknown option: $1" >&2
-        echo "Usage: $0 [--auto] [--pause N] [--act N]" >&2
-        exit 1
-        ;;
+        exit 0 ;;
+      *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
   done
 }
@@ -440,7 +440,6 @@ main() {
   narrate "  - \"Works on my machine\" inconsistencies"
   echo ""
 
-  # Allow jumping to a specific act
   if [ -n "$TARGET_ACT" ]; then
     case "$TARGET_ACT" in
       1) setup; act1_legacy ;;
@@ -449,7 +448,7 @@ main() {
       4) act4_platform ;;
       5) act5_isolation ;;
       cleanup) cleanup ;;
-      *) echo "Usage: $0 [--auto] [--pause N] [--act 1|2|3|4|5|cleanup]"; exit 1 ;;
+      *) echo "Usage: $0 [--auto] [--act 1|2|3|4|5|cleanup]"; exit 1 ;;
     esac
     exit 0
   fi

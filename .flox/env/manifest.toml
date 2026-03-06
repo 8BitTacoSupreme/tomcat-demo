@@ -1,0 +1,51 @@
+## Flox Environment Manifest -----------------------------------------
+##
+##   _Everything_ you need to know about the _manifest_ is here:
+##
+##   https://flox.dev/docs/reference/command-reference/manifest.toml/
+##
+## -------------------------------------------------------------------
+# Flox manifest version managed by Flox CLI
+version = 1
+
+## Install Packages --------------------------------------------------
+[install]
+tomcat9.pkg-path = "tomcat9"
+jdk21.pkg-path = "jdk21"
+jdk21.priority = 1
+gnumake.pkg-path = "gnumake"
+gnused.pkg-path = "gnused"
+
+## Environment Variables ---------------------------------------------
+[vars]
+
+## Activation Hook ---------------------------------------------------
+[hook]
+on-activate = '''
+'''
+
+## Profile script ----------------------------------------------------
+[profile]
+common = '''
+echo ""
+echo "  ┌──────────────────────────────────────────────────────┐"
+echo "  │  Flox Tomcat BUILD Environment                       │"
+echo "  │                                                      │"
+echo "  │  flox build        — build tomcat-demo package       │"
+echo "  │  flox publish      — publish to FloxHub catalog      │"
+echo "  └──────────────────────────────────────────────────────┘"
+echo ""
+'''
+
+## Include ----------------------------------------------------------
+[include]
+
+## Build and publish your own packages ------------------------------
+[build.tomcat-demo]
+description = "Tomcat demo webapp with runtime launcher"
+version = "1.0.0"
+sandbox = "pure"
+command = "make install PREFIX=$out"
+
+## Other Environment Options -----------------------------------------
+[options]

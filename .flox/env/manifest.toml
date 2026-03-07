@@ -10,9 +10,9 @@ version = 1
 
 ## Install Packages --------------------------------------------------
 [install]
-tomcat9.pkg-path = "tomcat9"
-jdk21.pkg-path = "jdk21"
-jdk21.priority = 1
+tomcat11.pkg-path = "tomcat11"
+jdk25.pkg-path = "jdk25"
+jdk25.priority = 1
 gnumake.pkg-path = "gnumake"
 gnused.pkg-path = "gnused"
 
@@ -43,7 +43,7 @@ echo ""
 ## Build and publish your own packages ------------------------------
 [build.tomcat-demo]
 description = "Tomcat demo webapp with runtime launcher"
-version = "1.0.0"
+version = "2.0.0"
 sandbox = "pure"
 command = "make install PREFIX=$out"
 
